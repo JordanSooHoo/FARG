@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fluid Concepts Companion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a reading companion. Chapter rail on the left (top strip on phones), one chapter open at a time. Letter strings, set in mono, are the recurring motif. */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --ink:#18232b; --muted:#5b6b75; --line:#d9e0e4;
+  --accent:#0d6a70; --accent-soft:#dcefee; --warm:#b8641c; --warm-soft:#f8eadb; --good:#2f7d4a; --good-soft:#e1f1e5;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono:"JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1519; --surface:#172027; --ink:#e3eaee; --muted:#93a4ae; --line:#2a363e;
+  --accent:#5cc3c6; --accent-soft:#16383b; --warm:#e59a55; --warm-soft:#3a2a1b; --good:#74c58f; --good-soft:#1b3424; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1519; --surface:#172027; --ink:#e3eaee; --muted:#93a4ae; --line:#2a363e;
+  --accent:#5cc3c6; --accent-soft:#16383b; --warm:#e59a55; --warm-soft:#3a2a1b; --good:#74c58f; --good-soft:#1b3424; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.6}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 32px;padding-bottom:20px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(28px,5vw,42px);line-height:1.08;margin:6px 0 0;text-wrap:balance}
+.analogy{font-family:var(--mono);font-size:15px;color:var(--muted);margin-top:10px}
+.analogy b{color:var(--accent);font-weight:600}
+.meter{min-width:220px;flex:0 1 280px}
+.meter .row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s}
+.receipt{font-family:var(--mono);font-size:12.5px;line-height:1.5;color:var(--muted);border:1px dashed var(--line);padding:10px 12px;margin-bottom:24px;display:flex;flex-wrap:wrap;gap:4px 18px}
+.receipt span:first-child{color:var(--ink)}
+.layout{display:grid;grid-template-columns:250px minmax(0,1fr);gap:32px;align-items:start}
+nav.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:2px}
+nav.rail button{all:unset;cursor:pointer;display:grid;grid-template-columns:30px 1fr 18px;gap:8px;align-items:center;padding:8px 10px;border-radius:6px;font-family:var(--display);font-size:14.5px;line-height:1.3;color:var(--ink)}
+nav.rail button:hover{background:var(--accent-soft)}
+nav.rail button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+nav.rail button[aria-current="true"]{background:var(--surface);box-shadow:inset 3px 0 0 var(--accent)}
+nav.rail .n{font-family:var(--mono);font-size:12px;color:var(--muted)}
+nav.rail .dot{width:12px;height:12px;border-radius:50%;border:1.5px solid var(--line)}
+nav.rail .dot.part{border-color:var(--warm);background:linear-gradient(90deg,var(--warm) 50%,transparent 50%)}
+nav.rail .dot.done{border-color:var(--good);background:var(--good)}
+main{min-width:0}
+.ch-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:baseline;justify-content:space-between}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(23px,3.4vw,30px);line-height:1.15;margin:4px 0 6px;text-wrap:balance}
+.authors{font-size:15px;color:var(--muted);font-style:italic}
+.conf{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:4px;white-space:nowrap}
+.conf.high{background:var(--good-soft);color:var(--good)}
+.conf.med{background:var(--accent-soft);color:var(--accent)}
+.conf.low{background:var(--warm-soft);color:var(--warm)}
+section.block{margin-top:26px}
+h3{font-family:var(--display);font-weight:500;font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.preview{max-width:66ch;margin:0}
+label.readbox{display:inline-flex;gap:10px;align-items:center;margin-top:16px;font-family:var(--display);font-size:15px;cursor:pointer;padding:8px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+label.readbox input{width:18px;height:18px;accent-color:var(--good)}
+.q{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.qs{display:flex;flex-direction:column;gap:14px}
+.q p{margin:0;font-weight:600;max-width:66ch}
+.q p .qn{font-family:var(--mono);font-weight:400;color:var(--accent);margin-right:8px}
+textarea{width:100%;min-height:76px;resize:vertical;font:inherit;font-size:16px;line-height:1.5;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+textarea:focus-visible{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+.qa{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{all:unset;cursor:pointer;font-family:var(--display);font-size:14px;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn[aria-pressed="true"].got{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.btn[aria-pressed="true"].part{background:var(--warm-soft);border-color:var(--warm);color:var(--warm)}
+.btn[aria-pressed="true"].miss{background:var(--line);border-color:var(--muted)}
+.model{border-left:3px solid var(--accent);padding:4px 0 4px 14px;color:var(--ink);max-width:66ch}
+.model .lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);display:block}
+.fc{background:var(--warm-soft);border-radius:8px;padding:16px 18px}
+.fc p{margin:0 0 10px;font-size:15px;max-width:66ch}
+.fc textarea{background:var(--surface);min-height:110px}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:32px;flex-wrap:wrap}
+.status{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:24px}
+@media (max-width:820px){
+  .layout{grid-template-columns:minmax(0,1fr);gap:20px}
+  nav.rail{position:static;flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:6px}
+  nav.rail button{grid-template-columns:auto 12px;white-space:nowrap;border:1px solid var(--line);background:var(--surface)}
+  nav.rail button .t{display:none}
+  nav.rail button[aria-current="true"]{box-shadow:inset 0 -3px 0 var(--accent)}
+}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Reading companion · Hofstadter &amp; FARG, 1995</div>
+      <h1>Fluid Concepts and Creative Analogies</h1>
+      <div class="analogy">abc → abd &nbsp;;&nbsp; xyz → <b>wyz</b></div>
+    </div>
+    <div class="meter">
+      <div class="row"><span>Chapters read</span><span id="readCount">0 / 11</span></div>
+      <div class="bar"><i id="readBar"></i></div>
+      <div class="row" style="margin-top:10px"><span>Questions self-graded</span><span id="qCount">0 / 33</span></div>
+      <div class="bar"><i id="qBar" style="background:var(--warm)"></i></div>
+    </div>
+  </header>
+
+  <div class="receipt" aria-label="About this copy">
+    <span>CROWN BOOKS · SAN FRANCISCO</span><span>04/27/1995</span><span>Fluid Concepts &amp; Creative Analogies</span>
+  </div>
+
+  <div class="layout">
+    <nav class="rail" id="rail" aria-label="Chapters"></nav>
+    <main id="main" aria-live="polite"></main>
+  </div>
+  <div class="status" id="status">Loading your saved progress…</div>
+</div>
+
+<script>
+const CH = [
+ {id:"c1",n:"1",t:"To Seek Whence Cometh a Sequence",pre:"Prologue + Ch. 1",by:"Douglas Hofstadter",conf:"med",
+  sum:"The Prologue tells the origin story of the Fluid Analogies Research Group (FARG) and Hofstadter's lifelong fascination with patterns. Chapter 1 introduces Seek-Whence, a project on how people figure out the rule behind a number sequence revealed one term at a time. Watch for the contrast between brute-force formula fitting and the human way: noticing groups, chunks and \"sameness,\" then tearing down an interpretation when a new term breaks it. The key idea is that perception is active and revisable, and that how you carve up the data determines what rule you can find.",
+  qs:[["Why does Hofstadter prefer sequence puzzles over a general real-world domain for studying pattern perception?","A small, idealized domain isolates the core of pattern perception without the endless messiness of the real world, so the mechanisms can be studied and modeled."],
+      ["What does it mean for an interpretation of a sequence to be \"reparsed,\" and why is that capacity central?","Reparsing means abandoning one way of grouping the terms and regrouping them when new evidence doesn't fit. Without it, a system is stuck with its first guess."],
+      ["How does a human-style approach to sequence extrapolation differ from searching a space of mathematical formulas?","Humans perceive structure (groups, repeats, sameness) and build a rule from that; formula search tries candidate equations with no sense of how the sequence \"looks.\""]]},
+ {id:"c2",n:"2",t:"The Architecture of Jumbo",pre:"Preface 2 + Ch. 2",by:"Douglas Hofstadter",conf:"high",
+  sum:"Jumbo models what your mind does with a word-jumble puzzle: shuffling letters into plausible English-like chunks without any conscious plan. This is where the core FARG architecture first appears: many tiny agents called codelets, a coderack that schedules them with weighted randomness, and structures that form, compete and break apart. Hofstadter leans on chemistry and cell-biology metaphors (bonds, enzymes, affinities) to explain how order emerges from small local actions. Watch for the \"parallel terraced scan\": exploring many possibilities at once, spending more effort on promising ones, with no central controller.",
+  qs:[["What is a codelet, and why does Jumbo use many small ones instead of one master algorithm?","A codelet is a tiny, single-purpose action that builds, tests or breaks a small piece of structure. Many small ones let global order emerge without a central planner."],
+      ["Explain the parallel terraced scan in your own words.","Explore many possibilities in parallel at shallow depth, then invest more effort in those that look promising, gradually narrowing toward a coherent result."],
+      ["Why does Jumbo build structures that can later be broken apart, rather than committing to each one permanently?","Early structures may be wrong; being able to dismantle them lets the system escape bad starts and find better overall organizations."]]},
+ {id:"c3",n:"3",t:"Numbo: A Study in Cognition and Recognition",pre:"Preface 3 + Ch. 3",by:"Daniel Defays",conf:"low",
+  sum:"Numbo tackles a number puzzle in the style of a French TV game: combine a handful of small numbers with arithmetic to hit a target. It pairs Jumbo-style codelets with a network of familiar arithmetic facts, so salient landmarks (like 6 × 4 = 24) pull attention the way they do for people. The preface argues that controlled randomness is a feature, not a bug, because it lets a system wander toward good ideas without exhaustive search. Watch for how Numbo finds solutions that look like human ones rather than the first ones a brute-force search would hit.",
+  qs:[["What role does the network of known arithmetic facts play in guiding Numbo's search?","Familiar facts act as landmarks that make certain combinations salient, steering the search toward routes a person would notice first."],
+      ["Why does the preface argue that nondeterminism helps rather than hurts a model of thinking?","Controlled randomness lets the system explore without rigid ordering, avoid getting stuck, and produce varied, human-like answers."],
+      ["Why would an exhaustive search be a poor model of how people solve this puzzle, even if it always finds an answer?","People don't enumerate all combinations; they are guided by salience and familiarity. Matching the answer isn't the same as matching the process."]]},
+ {id:"c4",n:"4",t:"High-level Perception, Representation, and Analogy",pre:"Preface 4 + Ch. 4",by:"David Chalmers, Robert French & Douglas Hofstadter",conf:"high",
+  sum:"This is the book's manifesto and its most-cited chapter. The preface describes the Eliza effect: our tendency to read deep understanding into a program's output when little is there. The chapter critiques AI systems such as BACON and the Structure-Mapping Engine for being handed tidy, pre-built representations, so the hardest cognitive work was done by the programmer. Watch for the central claim that perception (deciding what matters and how to see a situation) cannot be separated from analogy-making or reasoning. Read this one slowly; it reframes everything after it.",
+  qs:[["What is the Eliza effect, and why is it a danger when judging AI programs?","The tendency to attribute far more understanding to a program than it has, based on surface output. It leads to inflated claims about what AI achieves."],
+      ["What is the authors' main objection to how BACON and the Structure-Mapping Engine were presented?","They were fed hand-crafted representations that already contained the crucial insight, so the program's \"discovery\" was largely done by the programmer."],
+      ["Why do the authors argue that representation-building and analogy-making must happen together rather than in sequence?","How you represent a situation depends on what analogy you're pursuing, and vice versa; each shapes the other continuously."]]},
+ {id:"c5",n:"5",t:"The Copycat Project",pre:"Preface 5 + Ch. 5",by:"Douglas Hofstadter & Melanie Mitchell",conf:"high",
+  sum:"Copycat is the book's centerpiece: a program that solves letter-string analogies like \"abc becomes abd; what does xyz become?\" The preface introduces conceptual halos (the cloud of related ideas around each concept) and which features can \"slip\" to neighbors under pressure. The chapter lays out the full architecture: the Slipnet of concepts, the Workspace where structures are built, the Coderack, and temperature, which rises when the current interpretation is incoherent and makes the system more exploratory. Watch closely how Copycat reaches the elegant answer wyz, and why that answer requires seeing the problem differently rather than computing harder.",
+  qs:[["Name the main components of Copycat's architecture and what each one does.","Slipnet: the network of concepts and their shifting distances. Workspace: where structures over the letter strings are built. Coderack: the pool of codelets waiting to run. Temperature: the measure of overall coherence."],
+      ["What does \"temperature\" measure, and how does it change the system's behavior?","It measures how disorganized the current interpretation is. High temperature makes choices more random and exploratory; low temperature makes the system more decisive."],
+      ["Why is \"wyz\" considered a deeper answer to the xyz problem than \"xya\" or \"xyd,\" and what slippage does it require?","It sees xyz as the mirror image of abc, so \"first\" slips to \"last\" and \"successor\" to \"predecessor,\" sidestepping the problem that z has no successor."]]},
+ {id:"c6",n:"6",t:"Perspectives on Copycat",pre:"Preface 6 + Ch. 6",by:"Melanie Mitchell & Douglas Hofstadter",conf:"low",
+  sum:"The preface looks back at early AI approaches to analogy, such as Thomas Evans's 1960s program for geometric analogy puzzles. The chapter places Copycat among other analogy models of its time, including symbolic structure-mappers and connectionist approaches. Watch for the recurring dividing lines: who builds the representations (the program or the programmer), whether the process is deterministic or stochastic, and whether perception and mapping are interleaved. This is a comparative chapter, so it rewards having Chapter 4's critique fresh in mind.",
+  qs:[["What limitation do the early analogy programs in the preface share with the systems criticized in Chapter 4?","They work on pre-digested descriptions of the problem rather than perceiving and constructing their own."],
+      ["On what key dimensions do the authors contrast Copycat with other analogy models?","Who builds the representations, whether perception and mapping are interleaved, and whether the process is deterministic or stochastic."],
+      ["Why do the authors consider a stochastic process an advantage when modeling analogy-making?","It allows exploration of many interpretations, graceful recovery from dead ends, and a realistic spread of answers."]]},
+ {id:"c7",n:"7",t:"Prolegomena to Any Future Metacat",pre:"Preface 7 + Ch. 7",by:"Douglas Hofstadter",conf:"low",
+  sum:"The preface separates two things often lumped together: retrieving an old analogy from memory (being reminded of something) and inventing a new one on the spot. The chapter sketches Metacat, a proposed successor to Copycat that watches its own processing. Hofstadter wants a program that notices when it is stuck in a rut, remembers the answers it has found, can explain why one answer is better, and can \"jump out of the system\" instead of looping. Watch for self-awareness framed not as mysticism but as a practical mechanism for escaping bad interpretations.",
+  qs:[["How does retrieving an existing analogy differ from inventing a new one, according to the preface?","Retrieval finds a stored analogy prompted by similarity; invention builds a new mapping that didn't exist before, which is the creative act."],
+      ["What specific weaknesses of Copycat is Metacat meant to address?","Copycat can get stuck repeating failing approaches, doesn't remember its answers, and can't explain or compare them."],
+      ["Why does Hofstadter see self-monitoring as essential to genuine creativity?","Creativity requires noticing your own ruts and stepping outside them, which demands watching your own process."]]},
+ {id:"c8",n:"8",t:"Tabletop, BattleOp, Ob-Platte, Potelbat, Belpatto, Platobet",pre:"Preface 8 + Ch. 8",by:"Douglas Hofstadter & Robert French",conf:"high",
+  sum:"The playful title is a string of anagrams of \"Tabletop,\" a domain born in a coffeehouse. Two people sit across a table set with cups, plates and silverware; one touches an object and says \"Do this!\", and the other must touch the analogous object on their side. It sounds trivial, but competing pressures collide: the same kind of object, the same position, or the same role in a group. Watch how a small, concrete domain still demands the fluid perception that Copycat modeled with letters.",
+  qs:[["Describe the basic Tabletop task in one or two sentences.","One person touches an object on a table and says \"Do this!\"; the other touches the corresponding object on their own side."],
+      ["What competing pressures can pull the answer in different directions?","Matching the object's type, its position, or its role in a group of objects."],
+      ["Why did the researchers build a second micro-domain instead of just extending Copycat?","A second domain tests whether the architecture's principles generalize beyond letter strings."]]},
+ {id:"c9",n:"9",t:"The Emergent Personality of Tabletop",pre:"Preface 9 + Ch. 9",by:"Douglas Hofstadter & Robert French",conf:"low",
+  sum:"The preface tackles a thorny question: how do you judge whether a cognitive model is any good, when there's no single right answer? The chapter answers by running Tabletop many times on each problem and studying the distribution of its answers, its \"personality,\" rather than any one output. Those distributions are compared with what people tend to do. Watch for the shift from \"did it get the answer?\" to \"does its spread of answers, and their relative frequencies, look like a mind's?\"",
+  qs:[["Why is evaluating research in AI and cognitive science especially difficult, according to the preface?","There's often no single correct answer, results are hard to compare across models, and success can be ambiguous or overclaimed."],
+      ["What do the authors mean by Tabletop's \"personality\"?","The characteristic pattern of answers it gives and how often it gives each one."],
+      ["Why is a distribution of answers over many runs more informative than a single run?","A stochastic model's single run is a sample; the distribution shows its real tendencies and can be compared with human preferences."]]},
+ {id:"c10",n:"10",t:"Letter Spirit",pre:"Preface 10 + Ch. 10",by:"Douglas Hofstadter & Gary McGraw",conf:"med",
+  sum:"The preface is Hofstadter's love letter to alphabets and typefaces, and to the puzzle of what makes a set of letters share a style. Letter Spirit aims to design a full lowercase alphabet in a consistent style from a few seed letters, on a simple grid. Two pressures run through it: each shape must still read as its letter (the letter's category) while matching the others (the style's spirit). Watch for the proposed division of labor among modules that imagine, draw, examine and judge, and for why style can't be reduced to a few adjustable knobs.",
+  qs:[["What are the two pressures every Letter Spirit letter must satisfy at once?","Each must be recognizable as its letter and must share the style of the alphabet."],
+      ["Why does Hofstadter doubt that a typeface's style can be captured by a fixed set of parameters?","Style involves fluid, context-dependent judgments that slip and interact; fixed knobs only produce variations within one designer's preconceived space."],
+      ["What is the purpose of the loop between creating a letter and critically examining it?","Creating and critiquing in a loop lets the system refine designs until they satisfy both letter identity and style."]]},
+ {id:"ep",n:"Ep",t:"On Computers, Creativity, Credit, Brain Mechanisms, and the Turing Test",pre:"Epilogue",by:"Douglas Hofstadter",conf:"low",
+  sum:"The Epilogue steps back from the models to ask big questions. When a program produces something that looks creative, who deserves the credit: the program or the people who built it? Hofstadter is sharply skeptical of hyped claims about creative machines, tying back to the Eliza effect. Watch for his criteria for when a program's creativity would be real, and read it with today's AI in mind; much of it reads as if written last year.",
+  qs:[["How does Hofstadter frame the question of credit for a program's apparently creative output?","Credit depends on how much of the creative work the program itself did, versus how much the designers built in."],
+      ["What ties the Epilogue's skepticism back to the Eliza effect from Preface 4?","Impressive output can fool us into crediting understanding that isn't there."],
+      ["Based on the whole book, what capabilities would a program need before Hofstadter would call it genuinely creative?","Building its own representations, fluid concepts that slip under pressure, self-monitoring, and judging the quality of its own work."]]}
+];
+const CONF = {high:"Summary: high confidence",med:"Summary: medium confidence",low:"Summary: low confidence, check closely"};
+const LSKEY = "fcca-state-v1";
+let state = {current:"c1", ch:{}};
+let saveTimer = null;
+const $ = s => document.querySelector(s);
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const cs = id => state.ch[id] || (state.ch[id] = {read:false, notes:"", ans:{}, grade:{}, shown:{}});
+
+function lsLoad(){ try{ const v = JSON.parse(localStorage.getItem(LSKEY)||"null"); if(v && v.ch) state = Object.assign(state, v);}catch(e){} }
+function lsSave(){ try{ localStorage.setItem(LSKEY, JSON.stringify(state)); }catch(e){} }
+
+function save(){
+  lsSave();
+}
+
+function dotClass(id){
+  const c = state.ch[id]; if(!c) return "dot";
+  if(c.read) return "dot done";
+  const any = c.notes || Object.keys(c.grade).length || Object.values(c.ans).some(Boolean);
+  return any ? "dot part" : "dot";
+}
+
+function renderRail(){
+  $("#rail").innerHTML = CH.map(c => `<button type="button" data-id="${c.id}" aria-current="${state.current===c.id}"><span class="n">${c.n}</span><span class="t">${esc(c.t)}</span><span class="${dotClass(c.id)}" aria-label="${state.ch[c.id]?.read ? "read" : "not read"}"></span></button>`).join("");
+  const read = CH.filter(c => state.ch[c.id]?.read).length;
+  const graded = CH.reduce((a,c) => a + Object.keys(state.ch[c.id]?.grade || {}).length, 0);
+  $("#readCount").textContent = `${read} / ${CH.length}`; $("#readBar").style.width = (read/CH.length*100) + "%";
+  $("#qCount").textContent = `${graded} / 33`; $("#qBar").style.width = (graded/33*100) + "%";
+}
+
+function renderMain(){
+  const i = CH.findIndex(c => c.id === state.current), c = CH[i], s = cs(c.id);
+  const gb = (q,k,lbl) => `<button type="button" class="btn ${k}" data-grade="${q}" data-k="${k}" aria-pressed="${s.grade[q]===k}">${lbl}</button>`;
+  $("#main").innerHTML = `
+    <div class="eyebrow">${esc(c.pre)}</div>
+    <div class="ch-head"><h2>${esc(c.t)}</h2><span class="conf ${c.conf}">${CONF[c.conf]}</span></div>
+    <div class="authors">${esc(c.by)}</div>
+    <section class="block"><h3>Before you read</h3><p class="preview">${esc(c.sum)}</p>
+      <label class="readbox"><input type="checkbox" id="read-${c.id}" ${s.read?"checked":""}> I've finished this chapter</label></section>
+    <section class="block"><h3>After you read</h3><div class="qs">
+      ${c.qs.map((q,qi) => `<div class="q">
+        <p><span class="qn">Q${qi+1}</span>${esc(q[0])}</p>
+        <textarea id="ans-${c.id}-${qi}" data-ans="${qi}" placeholder="Write your answer before revealing the model answer">${esc(s.ans[qi]||"")}</textarea>
+        <div class="qa">${s.shown[qi] ? "" : `<button type="button" class="btn primary" data-reveal="${qi}">Reveal model answer</button>`}</div>
+        ${s.shown[qi] ? `<div class="model"><span class="lbl">Model answer</span>${esc(q[1])}</div>
+        <div class="qa"><span class="eyebrow">How did you do?</span>${gb(qi,"got","Got it")}${gb(qi,"part","Partly")}${gb(qi,"miss","Missed it")}</div>` : ""}
+      </div>`).join("")}</div></section>
+    <section class="block fc"><h3>Fact-check notes</h3>
+      <p>This guide was written from memory. Note anything the summary or answers get wrong, overstate or miss. Where they disagree, the book wins.</p>
+      <textarea id="notes-${c.id}" data-notes placeholder="e.g. The summary says the Coderack…, but the book actually says…">${esc(s.notes)}</textarea></section>
+    <div class="pager">
+      ${i>0 ? `<button type="button" class="btn" data-go="${CH[i-1].id}">← ${esc(CH[i-1].pre)}</button>` : "<span></span>"}
+      ${i<CH.length-1 ? `<button type="button" class="btn" data-go="${CH[i+1].id}">${esc(CH[i+1].pre)} →</button>` : ""}
+    </div>`;
+}
+
+function render(){ renderRail(); renderMain(); }
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  const s = cs(state.current);
+  if(b.dataset.id || b.dataset.go){ state.current = b.dataset.id || b.dataset.go; render(); save(); window.scrollTo({top:0, behavior:"smooth"}); return; }
+  if(b.dataset.reveal !== undefined){ s.shown[b.dataset.reveal] = true; renderMain(); save(); return; }
+  if(b.dataset.grade !== undefined){ const q = b.dataset.grade; s.grade[q] = s.grade[q]===b.dataset.k ? undefined : b.dataset.k; if(!s.grade[q]) delete s.grade[q]; render(); save(); }
+});
+document.addEventListener("input", e => {
+  const t = e.target, s = cs(state.current);
+  if(t.dataset.ans !== undefined){ s.ans[t.dataset.ans] = t.value; save(); }
+  else if(t.dataset.notes !== undefined){ s.notes = t.value; save(); renderRail(); }
+});
+document.addEventListener("change", e => {
+  if(e.target.id && e.target.id.startsWith("read-")){ cs(state.current).read = e.target.checked; renderRail(); save(); }
+});
+
+lsLoad(); render();
+$("#status").textContent = "Your answers and notes are saved in this browser on this device.";
+</script>
+
+</body>
+</html>
