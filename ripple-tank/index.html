@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Ripple Tank 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: full-bleed WebGL tank; a slim instrument panel floats top-left, heat scale bottom-right. Single dark look, chosen for a lab viewport. */
+:root {
+  --ground: #070b10;
+  --panel: rgba(13, 20, 28, 0.86);
+  --line: #1f2c38;
+  --fg: #d9e4ec;
+  --muted: #7f93a3;
+  --accent: #ffb547;
+  --cool: #3fb6ff;
+  --display: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--ground);
+  color: var(--fg);
+  font-family: var(--display);
+  overflow: hidden;
+}
+#stage { position: fixed; inset: 0; }
+#stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+#stage.paint canvas { cursor: crosshair; }
+
+.panel {
+  position: fixed;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  left: max(16px, env(safe-area-inset-left, 0px));
+  width: 268px;
+  max-height: calc(100% - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+}
+.panel header {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.panel h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: 0.01em; }
+.panel h1 small { display: block; font: 400 10.5px/1.4 var(--mono); color: var(--muted); letter-spacing: 0.04em; margin-top: 2px; }
+.body { display: flex; flex-direction: column; gap: 14px; padding: 12px 14px 14px; }
+.panel.collapsed .body { display: none; }
+.panel.collapsed header { border-bottom: 0; }
+
+.group { display: flex; flex-direction: column; gap: 8px; }
+.label {
+  font: 600 10px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted);
+}
+.seg { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: 7px; overflow: hidden; }
+.seg button {
+  font: 500 12.5px/1 var(--display); color: var(--muted); background: transparent;
+  border: 0; padding: 8px 4px; cursor: pointer;
+}
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #1a1205; }
+.seg button:not([aria-pressed="true"]):hover { color: var(--fg); background: rgba(255,255,255,0.04); }
+
+.slider { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; align-items: center; }
+.slider label { font-size: 12.5px; }
+.slider output { font: 400 11.5px var(--mono); color: var(--accent); font-variant-numeric: tabular-nums; }
+.slider input { grid-column: 1 / -1; width: 100%; accent-color: var(--accent); margin: 0; }
+
+.row { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn {
+  font: 500 12.5px/1 var(--display); color: var(--fg);
+  background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 7px;
+  padding: 8px 10px; cursor: pointer; flex: 1 1 auto;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.on { border-color: var(--accent); color: var(--accent); }
+.icon-btn { flex: 0 0 auto; padding: 6px 9px; font-family: var(--mono); font-size: 12px; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--cool); outline-offset: 2px; }
+select {
+  font: 500 12.5px var(--display); color: var(--fg); background: #0d141c;
+  border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px; width: 100%;
+}
+
+.custom { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: end; }
+.swatch { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.swatch label { font-size: 12px; color: var(--muted); }
+.swatch .pick { display: flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 7px; padding: 4px 6px; background: #0d141c; }
+.swatch input[type="color"] { width: 26px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; flex: 0 0 auto; }
+.swatch input[type="text"] { width: 100%; min-width: 0; font: 400 11.5px var(--mono); color: var(--fg); background: transparent; border: 0; text-transform: uppercase; }
+.swatch input[type="text"][aria-invalid="true"] { color: #ff6b6b; }
+.readout {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+  background: var(--line); border: 1px solid var(--line); border-radius: 7px; overflow: hidden;
+}
+.readout div { background: #0b1118; padding: 7px 8px; display: flex; flex-direction: column; gap: 4px; }
+.readout span { font: 600 9px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.readout b { font: 600 13px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.hint { font-size: 11.5px; line-height: 1.5; color: var(--muted); margin: 0; }
+.hint kbd { font: 500 10.5px var(--mono); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+
+.scale {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(260px, calc(100% - 32px));
+  background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+  padding: 9px 11px 8px; display: flex; flex-direction: column; gap: 6px;
+}
+.scale canvas { width: 100%; height: 10px; border-radius: 3px; display: block; }
+.scale .ticks { display: flex; justify-content: space-between; font: 400 10.5px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.scale .label { display: flex; justify-content: space-between; }
+
+#err { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; text-align: center; color: var(--muted); }
+
+@media (max-width: 560px) {
+  .panel { width: calc(100% - 32px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); max-height: 58%; }
+  .scale { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+}
+</style>
+
+</head>
+<body>
+<div id="stage" class="paint"></div>
+
+<aside class="panel" id="panel">
+  <header>
+    <h1>Ripple Tank<small>2D WAVE EQUATION · 128 × 128 CELLS</small></h1>
+    <button class="btn icon-btn" id="collapse" aria-expanded="true" aria-controls="panelBody">Hide</button>
+  </header>
+  <div class="body" id="panelBody">
+    <div class="group">
+      <span class="label">Click on the surface to</span>
+      <div class="seg" role="group" aria-label="Pointer tool">
+        <button id="toolDrop" aria-pressed="true">Drop</button>
+        <button id="toolSource" aria-pressed="false">Oscillator</button>
+        <button id="toolOrbit" aria-pressed="false">Orbit</button>
+      </div>
+      <p class="hint" id="toolHint">Click or drag across the water to make ripples. Drag empty space or <kbd>right-drag</kbd> to orbit, scroll to zoom.</p>
+    </div>
+
+    <div class="readout" aria-live="off">
+      <div><span>Peak</span><b id="statPeak">0.00</b></div>
+      <div><span>Energy</span><b id="statEnergy">0</b></div>
+      <div><span>Sources</span><b id="statSources">0</b></div>
+    </div>
+
+    <div class="group">
+      <div class="slider"><label for="speed">Wave speed (c)</label><output id="speedOut"></output><input type="range" id="speed" min="0.1" max="0.7" step="0.01" value="0.5"></div>
+      <div class="slider"><label for="damping">Damping</label><output id="dampingOut"></output><input type="range" id="damping" min="0" max="2" step="0.01" value="0.25"></div>
+      <div class="slider"><label for="radius">Drop radius (cells)</label><output id="radiusOut"></output><input type="range" id="radius" min="1" max="10" step="0.5" value="3"></div>
+      <div class="slider"><label for="strength">Drop strength</label><output id="strengthOut"></output><input type="range" id="strength" min="-2" max="2" step="0.05" value="1"></div>
+      <div class="slider"><label for="freq">Oscillator frequency</label><output id="freqOut"></output><input type="range" id="freq" min="0.2" max="3" step="0.05" value="1.2"></div>
+      <div class="slider"><label for="relief">Height relief</label><output id="reliefOut"></output><input type="range" id="relief" min="0" max="3" step="0.05" value="1"></div>
+    </div>
+
+    <div class="group">
+      <span class="label">Heatmap</span>
+      <select id="palette" aria-label="Heatmap palette">
+        <option value="thermal">Thermal (crest hot, trough cold)</option>
+        <option value="magma">Magma (by magnitude)</option>
+        <option value="ocean">Ocean</option>
+        <option value="spectral">Spectral</option>
+        <option value="custom">Custom (two colors)</option>
+      </select>
+      <div class="custom" id="customRow" hidden>
+        <div class="swatch">
+          <label for="colorLoHex">Trough</label>
+          <div class="pick"><input type="color" id="colorLo" value="#0a2a6e" aria-label="Trough color picker"><input type="text" id="colorLoHex" value="#0A2A6E" maxlength="7" spellcheck="false"></div>
+        </div>
+        <div class="swatch">
+          <label for="colorHiHex">Crest</label>
+          <div class="pick"><input type="color" id="colorHi" value="#ffb547" aria-label="Crest color picker"><input type="text" id="colorHiHex" value="#FFB547" maxlength="7" spellcheck="false"></div>
+        </div>
+        <button class="btn icon-btn" id="swapColors" aria-label="Swap trough and crest colors" title="Swap colors">⇄</button>
+      </div>
+      <div class="slider"><label for="range">Heat range (±)</label><output id="rangeOut"></output><input type="range" id="range" min="0.05" max="1.5" step="0.01" value="0.45"></div>
+    </div>
+
+    <div class="group">
+      <span class="label">Edges</span>
+      <div class="seg" role="group" aria-label="Boundary condition">
+        <button id="edgeReflect" aria-pressed="true">Reflect</button>
+        <button id="edgeAbsorb" aria-pressed="false">Absorb</button>
+      </div>
+    </div>
+
+    <div class="group">
+      <span class="label">Scenes</span>
+      <div class="row">
+        <button class="btn" id="sceneDrop">Single drop</button>
+        <button class="btn" id="sceneInterf">Interference</button>
+        <button class="btn" id="sceneLine">Plane wave</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="rain">Rain</button>
+        <button class="btn" id="wire">Wireframe</button>
+        <button class="btn" id="pause">Pause</button>
+      </div>
+      <div class="row">
+        <button class="btn" id="clearSources">Remove oscillators</button>
+        <button class="btn" id="reset">Calm water</button>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div class="scale" aria-label="Heatmap scale">
+  <div class="label"><span>Surface height</span><span id="scaleName">thermal</span></div>
+  <canvas id="legend" width="256" height="10"></canvas>
+  <div class="ticks"><span id="tLo">−0.45</span><span>0</span><span id="tHi">+0.45</span></div>
+</div>
+
+<div id="err" hidden>WebGL is not available in this browser, so the tank cannot be drawn.</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- Simulation ----------
+  const N = 128;              // grid cells per side
+  const SIZE = 10;            // world units across the tank
+  const DX = SIZE / (N - 1);
+  let h = new Float32Array(N * N);   // height now
+  let hp = new Float32Array(N * N);  // height previous step
+  let hn = new Float32Array(N * N);  // scratch for next step
+  const sponge = new Float32Array(N * N);
+  {
+    const W = 14;
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const d = Math.min(i, j, N - 1 - i, N - 1 - j);
+      sponge[j * N + i] = d >= W ? 1 : 0.86 + 0.14 * Math.pow(d / W, 0.5);
+    }
+  }
+
+  const params = {
+    speed: 0.5, damping: 0.25, radius: 3, strength: 1, freq: 1.2, relief: 1,
+    range: 0.45, palette: "thermal", edges: "reflect",
+    rain: false, paused: false, tool: "drop",
+  };
+  let sources = [];   // {i, j, phase}
+  let simTime = 0;
+
+  function step(dt) {
+    const c2 = params.speed * params.speed;
+    const damp = 1 - params.damping * 0.004;
+    for (let j = 1; j < N - 1; j++) {
+      const row = j * N;
+      for (let i = 1; i < N - 1; i++) {
+        const k = row + i;
+        const lap = h[k - 1] + h[k + 1] + h[k - N] + h[k + N] - 4 * h[k];
+        hn[k] = (2 * h[k] - hp[k] + c2 * lap) * damp;
+      }
+    }
+    if (params.edges === "reflect") {
+      for (let i = 0; i < N; i++) {
+        hn[i] = hn[N + i];
+        hn[(N - 1) * N + i] = hn[(N - 2) * N + i];
+        hn[i * N] = hn[i * N + 1];
+        hn[i * N + N - 1] = hn[i * N + N - 2];
+      }
+    } else {
+      for (let k = 0; k < N * N; k++) {
+        const s = sponge[k];
+        if (s < 1) { hn[k] *= s; h[k] *= s; }
+      }
+      for (let i = 0; i < N; i++) {
+        hn[i] = hn[(N - 1) * N + i] = hn[i * N] = hn[i * N + N - 1] = 0;
+      }
+    }
+    // Driven oscillators pin a small disc to a sinusoid.
+    simTime += dt;
+    for (const s of sources) {
+      const v = 0.55 * Math.sin(2 * Math.PI * params.freq * simTime + s.phase);
+      const r = 2;
+      for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+        const ii = s.i + di, jj = s.j + dj;
+        if (ii < 1 || jj < 1 || ii > N - 2 || jj > N - 2) continue;
+        const w = Math.exp(-(di * di + dj * dj) / 2);
+        const k = jj * N + ii;
+        hn[k] = hn[k] * (1 - w) + v * w;
+      }
+    }
+    const t = hp; hp = h; h = hn; hn = t;
+  }
+
+  function drop(ci, cj, radius = params.radius, strength = params.strength) {
+    const R = Math.ceil(radius * 2.5);
+    const amp = strength * 0.9;
+    for (let dj = -R; dj <= R; dj++) for (let di = -R; di <= R; di++) {
+      const i = Math.round(ci) + di, j = Math.round(cj) + dj;
+      if (i < 1 || j < 1 || i > N - 2 || j > N - 2) continue;
+      const d2 = (i - ci) ** 2 + (j - cj) ** 2;
+      const g = amp * Math.exp(-d2 / (radius * radius));
+      h[j * N + i] -= g;          // push the surface down, like a falling drop
+      hp[j * N + i] -= g * 0.6;   // partial pre-step so it rebounds outward
+    }
+  }
+
+  function calm() { h.fill(0); hp.fill(0); hn.fill(0); }
+
+  // ---------- Heatmap palettes ----------
+  const PALETTES = {
+    thermal:  { signed: true,  stops: ["#0a1a5c", "#1565c0", "#29b6f6", "#e9f2f5", "#ffca28", "#f4511e", "#7f0a0a"] },
+    magma:    { signed: false, stops: ["#0b0724", "#3b0f70", "#8c2981", "#de4968", "#fe9f6d", "#fcfdbf"] },
+    ocean:    { signed: true,  stops: ["#021024", "#05386b", "#1b6ca8", "#3fb6ff", "#9ee6ff", "#f2fdff"] },
+    spectral: { signed: true,  stops: ["#5e4fa2", "#3288bd", "#66c2a5", "#e6f598", "#fee08b", "#f46d43", "#9e0142"] },
+    custom:   { signed: true,  stops: ["#0a2a6e", "#ffb547"] },
+  };
+  const LUT_SIZE = 256;
+  let lut = new Float32Array(LUT_SIZE * 3);
+  function hexToRgb(hx) { const n = parseInt(hx.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; }
+  function buildLut() {
+    const stops = PALETTES[params.palette].stops.map(hexToRgb);
+    for (let x = 0; x < LUT_SIZE; x++) {
+      const t = x / (LUT_SIZE - 1) * (stops.length - 1);
+      const a = Math.min(Math.floor(t), stops.length - 2), f = t - a;
+      for (let c = 0; c < 3; c++) {
+        const v = stops[a][c] + (stops[a + 1][c] - stops[a][c]) * f;
+        lut[x * 3 + c] = Math.pow(v, 2.2);   // to linear for three.js lighting
+      }
+    }
+    drawLegend(stops);
+  }
+  function drawLegend(stops) {
+    const cv = $("legend"), ctx = cv.getContext("2d");
+    const g = ctx.createLinearGradient(0, 0, cv.width, 0);
+    PALETTES[params.palette].stops.forEach((s, i, arr) => g.addColorStop(i / (arr.length - 1), s));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, cv.width, cv.height);
+    const signed = PALETTES[params.palette].signed;
+    const r = params.range.toFixed(2);
+    $("tLo").textContent = signed ? "−" + r : "0";
+    $("tHi").textContent = signed ? "+" + r : r;
+    $("tLo").nextElementSibling.textContent = signed ? "0" : (params.range / 2).toFixed(2);
+    $("scaleName").textContent = signed ? params.palette + " · signed" : params.palette + " · |height|";
+  }
+
+  // ---------- Scene ----------
+  const stage = $("stage");
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (e) {
+    $("err").hidden = false; return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setClearColor(0x070b10, 1);
+  stage.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x070b10, 22, 42);
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
+  camera.position.set(0, 9.5, 11.5);
+
+  scene.add(new THREE.HemisphereLight(0xcfe6ff, 0x0a0f18, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 0.85);
+  key.position.set(-6, 12, 5); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x6fb8ff, 0.35);
+  rim.position.set(8, 4, -9); scene.add(rim);
+
+  const geo = new THREE.PlaneGeometry(SIZE, SIZE, N - 1, N - 1);
+  geo.rotateX(-Math.PI / 2);   // vertex k = j*N + i  →  x by i, z by j
+  const colors = new Float32Array(N * N * 3);
+  geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const mat = new THREE.MeshPhongMaterial({ vertexColors: true, shininess: 90, specular: 0x444444, side: THREE.DoubleSide });
+  const water = new THREE.Mesh(geo, mat);
+  scene.add(water);
+
+  // Tank rim and floor grid for depth cues
+  const half = SIZE / 2;
+  const tankGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(SIZE, 1.6, SIZE));
+  const tank = new THREE.LineSegments(tankGeo, new THREE.LineBasicMaterial({ color: 0x2a3b4b }));
+  tank.position.y = -0.3; scene.add(tank);
+  const grid = new THREE.GridHelper(SIZE * 3, 30, 0x18232e, 0x111a23);
+  grid.position.y = -1.1; scene.add(grid);
+
+  // Cursor ring shows where a drop will land and how wide it is
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.92, 1, 48),
+    new THREE.MeshBasicMaterial({ color: 0xffb547, transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthTest: false })
+  );
+  ring.rotation.x = -Math.PI / 2; ring.renderOrder = 2; ring.visible = false;
+  scene.add(ring);
+
+  // Oscillator markers
+  const markerGeo = new THREE.SphereGeometry(0.11, 16, 12);
+  const markerMat = new THREE.MeshBasicMaterial({ color: 0xffb547 });
+  const markers = new THREE.Group(); scene.add(markers);
+  function syncMarkers() {
+    markers.clear();
+    for (const s of sources) {
+      const m = new THREE.Mesh(markerGeo, markerMat);
+      m.position.set(s.i * DX - half, 0.9, s.j * DX - half);
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.9, 6), markerMat);
+      stem.position.set(m.position.x, 0.45, m.position.z);
+      markers.add(m, stem);
+    }
+    $("statSources").textContent = sources.length;
+  }
+
+  // ---------- Pointer interaction (registered before OrbitControls so it can veto orbiting) ----------
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const hit = new THREE.Vector3();
+  let painting = false, lastCell = null, paintPointer = null;
+
+  function cellAt(ev) {
+    const r = renderer.domElement.getBoundingClientRect();
+    ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    raycaster.setFromCamera(ndc, camera);
+    if (!raycaster.ray.intersectPlane(plane, hit)) return null;
+    if (Math.abs(hit.x) > half || Math.abs(hit.z) > half) return null;
+    return { i: (hit.x + half) / DX, j: (hit.z + half) / DX, x: hit.x, z: hit.z };
+  }
+
+  const canvas = renderer.domElement;
+  canvas.addEventListener("pointerdown", (ev) => {
+    if (params.tool === "orbit" || ev.button !== 0) return;
+    const c = cellAt(ev);
+    if (!c) return;   // off the water: let orbit take it
+    controls.enabled = false;
+    if (params.tool === "source") {
+      if (sources.length >= 8) sources.shift();
+      sources.push({ i: Math.round(c.i), j: Math.round(c.j), phase: 0 });
+      syncMarkers();
+      return;
+    }
+    painting = true; paintPointer = ev.pointerId;
+    canvas.setPointerCapture(ev.pointerId);
+    drop(c.i, c.j); lastCell = c;
+  });
+  canvas.addEventListener("pointermove", (ev) => {
+    const c = cellAt(ev);
+    if (c && params.tool !== "orbit" && ev.pointerType === "mouse") {
+      ring.visible = true;
+      const rr = params.tool === "source" ? 2 * DX : params.radius * DX * 1.4;
+      ring.scale.set(rr, rr, 1);
+      ring.position.set(c.x, 0.02 + sampleHeight(c) * params.relief, c.z);
+    } else ring.visible = false;
+    if (!painting || ev.pointerId !== paintPointer || !c) return;
+    const dist = Math.hypot(c.i - lastCell.i, c.j - lastCell.j);
+    const spacing = Math.max(1.5, params.radius * 0.9);
+    if (dist >= spacing) {
+      const n = Math.min(6, Math.floor(dist / spacing));
+      for (let s = 1; s <= n; s++) {
+        const t = s / n;
+        drop(lastCell.i + (c.i - lastCell.i) * t, lastCell.j + (c.j - lastCell.j) * t, params.radius, params.strength * 0.45);
+      }
+      lastCell = c;
+    }
+  });
+  const endPaint = (ev) => {
+    if (ev.pointerId === paintPointer) { painting = false; paintPointer = null; }
+    controls.enabled = true;
+  };
+  canvas.addEventListener("pointerup", endPaint);
+  canvas.addEventListener("pointercancel", endPaint);
+  canvas.addEventListener("pointerleave", () => { ring.visible = false; });
+  function sampleHeight(c) {
+    const i = Math.min(N - 1, Math.max(0, Math.round(c.i))), j = Math.min(N - 1, Math.max(0, Math.round(c.j)));
+    return h[j * N + i];
+  }
+
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.47;
+  controls.minDistance = 5; controls.maxDistance = 30;
+  controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+  controls.target.set(0, -0.3, 0);
+
+  // ---------- Render loop ----------
+  const pos = geo.attributes.position.array;
+  function updateMesh() {
+    const relief = params.relief, inv = 1 / params.range;
+    const signed = PALETTES[params.palette].signed;
+    for (let k = 0; k < N * N; k++) {
+      const v = h[k];
+      pos[k * 3 + 1] = v * relief;
+      let t = signed ? 0.5 + 0.5 * v * inv : Math.abs(v) * inv;
+      t = t < 0 ? 0 : t > 1 ? 1 : t;
+      const li = (t * (LUT_SIZE - 1)) | 0;
+      colors[k * 3] = lut[li * 3]; colors[k * 3 + 1] = lut[li * 3 + 1]; colors[k * 3 + 2] = lut[li * 3 + 2];
+    }
+    geo.attributes.position.needsUpdate = true;
+    geo.attributes.color.needsUpdate = true;
+    geo.computeVertexNormals();
+  }
+
+  function resize() {
+    const w = stage.clientWidth, hh = stage.clientHeight;
+    renderer.setSize(w, hh, false);
+    camera.aspect = w / hh;
+    if (w < 560) camera.position.multiplyScalar(1); // keep user's orbit; fov handles fit
+    camera.fov = w < 560 ? 58 : 42;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener("resize", resize);
+
+  let rainClock = 0, statClock = 0, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (!params.paused) {
+      const steps = 3;
+      for (let s = 0; s < steps; s++) step(1 / 180);
+      if (params.rain) {
+        rainClock += dt;
+        while (rainClock > 0.09) {
+          rainClock -= 0.09;
+          drop(4 + Math.random() * (N - 8), 4 + Math.random() * (N - 8), 1 + Math.random() * 1.8, 0.35 + Math.random() * 0.5);
+        }
+      }
+    }
+    updateMesh();
+    controls.update();
+    renderer.render(scene, camera);
+
+    statClock += dt;
+    if (statClock > 0.15) {
+      statClock = 0;
+      let peak = 0, e = 0;
+      for (let k = 0; k < N * N; k++) { const a = Math.abs(h[k]); if (a > peak) peak = a; e += h[k] * h[k]; }
+      $("statPeak").textContent = peak.toFixed(2);
+      $("statEnergy").textContent = e < 1000 ? e.toFixed(1) : Math.round(e).toLocaleString();
+    }
+    requestAnimationFrame(frame);
+  }
+
+  // ---------- UI wiring ----------
+  const fmt = { speed: 2, damping: 2, radius: 1, strength: 2, freq: 2, relief: 2, range: 2 };
+  const units = { freq: " Hz", relief: "×" };
+  for (const id of Object.keys(fmt)) {
+    const el = $(id), out = $(id + "Out");
+    const sync = () => {
+      params[id] = parseFloat(el.value);
+      out.textContent = params[id].toFixed(fmt[id]) + (units[id] || "");
+      if (id === "range") drawLegend();
+    };
+    el.addEventListener("input", sync); sync();
+  }
+  $("palette").addEventListener("change", (e) => {
+    params.palette = e.target.value;
+    $("customRow").hidden = params.palette !== "custom";
+    buildLut();
+  });
+
+  // Custom scale: trough color at −range, crest color at +range, blended linearly between
+  const HEX = /^#?[0-9a-f]{6}$/i;
+  function setCustom(which, value) {
+    const hex = ("#" + value.replace("#", "")).toLowerCase();
+    PALETTES.custom.stops[which === "lo" ? 0 : 1] = hex;
+    const id = which === "lo" ? "colorLo" : "colorHi";
+    $(id).value = hex;
+    $(id + "Hex").value = hex.toUpperCase();
+    $(id + "Hex").removeAttribute("aria-invalid");
+    if (params.palette === "custom") buildLut();
+  }
+  for (const which of ["lo", "hi"]) {
+    const id = which === "lo" ? "colorLo" : "colorHi";
+    $(id).addEventListener("input", (e) => setCustom(which, e.target.value));
+    $(id + "Hex").addEventListener("input", (e) => {
+      const v = e.target.value.trim();
+      if (HEX.test(v)) setCustom(which, v); else e.target.setAttribute("aria-invalid", "true");
+    });
+    $(id + "Hex").addEventListener("blur", (e) => { e.target.value = $(id).value.toUpperCase(); e.target.removeAttribute("aria-invalid"); });
+  }
+  $("swapColors").onclick = () => {
+    const [lo, hi] = PALETTES.custom.stops;
+    setCustom("lo", hi); setCustom("hi", lo);
+  };
+
+  const hints = {
+    drop: "Click or drag across the water to make ripples. Drag empty space or <kbd>right-drag</kbd> to orbit, scroll to zoom.",
+    source: "Click the water to place a steady oscillator (up to 8). Pairs make interference patterns.",
+    orbit: "Drag anywhere to rotate the tank. Scroll or pinch to zoom.",
+  };
+  function setTool(t) {
+    params.tool = t;
+    $("toolDrop").setAttribute("aria-pressed", t === "drop");
+    $("toolSource").setAttribute("aria-pressed", t === "source");
+    $("toolOrbit").setAttribute("aria-pressed", t === "orbit");
+    $("toolHint").innerHTML = hints[t];
+    stage.classList.toggle("paint", t !== "orbit");
+    ring.visible = false;
+  }
+  $("toolDrop").onclick = () => setTool("drop");
+  $("toolSource").onclick = () => setTool("source");
+  $("toolOrbit").onclick = () => setTool("orbit");
+
+  function setEdges(m) {
+    params.edges = m;
+    $("edgeReflect").setAttribute("aria-pressed", m === "reflect");
+    $("edgeAbsorb").setAttribute("aria-pressed", m === "absorb");
+  }
+  $("edgeReflect").onclick = () => setEdges("reflect");
+  $("edgeAbsorb").onclick = () => setEdges("absorb");
+
+  const toggle = (id, key, onLabel, offLabel) => {
+    const b = $(id);
+    b.onclick = () => {
+      params[key] = !params[key];
+      b.classList.toggle("on", params[key]);
+      if (onLabel) b.textContent = params[key] ? onLabel : offLabel;
+      if (key === "wire") mat.wireframe = params.wire;
+    };
+  };
+  toggle("rain", "rain");
+  toggle("wire", "wire");
+  toggle("pause", "paused", "Resume", "Pause");
+
+  $("reset").onclick = () => calm();
+  $("clearSources").onclick = () => { sources = []; syncMarkers(); };
+  $("sceneDrop").onclick = () => { calm(); sources = []; syncMarkers(); drop(N / 2, N / 2, 3.5, 1.4); };
+  $("sceneInterf").onclick = () => {
+    calm(); setEdges("absorb");
+    sources = [{ i: Math.round(N / 2 - 14), j: Math.round(N * 0.3), phase: 0 }, { i: Math.round(N / 2 + 14), j: Math.round(N * 0.3), phase: 0 }];
+    syncMarkers();
+  };
+  $("sceneLine").onclick = () => {
+    calm(); setEdges("reflect"); sources = []; syncMarkers();
+    for (let j = 1; j < N - 1; j++) for (let i = 1; i < 14; i++) {
+      const g = 0.7 * Math.exp(-((i - 7) ** 2) / 8);
+      h[j * N + i] += g; hp[j * N + i] += g * 0.4;
+    }
+  };
+
+  $("collapse").onclick = () => {
+    const p = $("panel"), c = p.classList.toggle("collapsed");
+    $("collapse").textContent = c ? "Show" : "Hide";
+    $("collapse").setAttribute("aria-expanded", !c);
+  };
+  if (window.innerWidth < 560) $("collapse").click();
+
+  window.addEventListener("keydown", (e) => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.code === "Space") { e.preventDefault(); $("pause").click(); }
+    if (e.key === "r" || e.key === "R") $("rain").click();
+    if (e.key === "c" || e.key === "C") calm();
+  });
+
+  // Open in a working state: three drops already spreading and crossing
+  buildLut();
+  resize();
+  drop(N * 0.35, N * 0.4, 3.5, 1.3);
+  drop(N * 0.66, N * 0.58, 2.5, 1.0);
+  drop(N * 0.5, N * 0.75, 2, 0.8);
+  for (let s = 0; s < 40; s++) step(1 / 180);
+  requestAnimationFrame((t) => { last = t; frame(t); });
+})();
+</script>
+</body>
+</html>
